@@ -11,11 +11,11 @@ var Bot = new Twit(twitterConfig);
 var csv = new Converter({});
 
 // get the current index from a json file, so records aren't repeated
-var obj = JSON.parse(fs.readFileSync('badarborists-index.json', 'utf8') || '{}');
+var obj = JSON.parse(fs.readFileSync(__dirname + '/badarborists-index.json', 'utf8') || '{}');
 var index = obj.index || 0;
 
 // read a csv file containing incident of illegal arborist activity
-csv.fromFile("./IllegalArborists.csv", function(err, csvFile) {
+csv.fromFile(__dirname + '/IllegalArborists.csv', function(err, csvFile) {
   if (err) console.error('error reading csv file', err);
 
   var doTweet = function() {
@@ -70,7 +70,7 @@ csv.fromFile("./IllegalArborists.csv", function(err, csvFile) {
 
 
     // save csv index to store what records have been read
-    jsonfile.writeFile('badarborists-index.json', { 'index': index }, { spaces: 2 }, function(err) {
+    jsonfile.writeFile(__dirname + '/badarborists-index.json', { 'index': index }, { spaces: 2 }, function(err) {
       console.error(err);
     });
 

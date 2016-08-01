@@ -6,6 +6,7 @@ var Twit = require('twit');
 var Converter = require("csvtojson").Converter;
 var twitterConfig = require('./twitter-config');
 
+console.log(Date());
 var Bot = new Twit(twitterConfig);
 var csv = new Converter({});
 
@@ -14,7 +15,8 @@ var obj = JSON.parse(fs.readFileSync('badarborists-index.json', 'utf8') || '{}')
 var index = obj.index || 0;
 
 // read a csv file containing incident of illegal arborist activity
-csv.fromFile("./IllegalArborists.csv", function(err,csvFile) {
+csv.fromFile("./IllegalArborists.csv", function(err, csvFile) {
+  if (err) console.error('error reading csv file', err);
 
   var doTweet = function() {
 
@@ -30,34 +32,35 @@ csv.fromFile("./IllegalArborists.csv", function(err,csvFile) {
     }
 
     var status = 'Illegal destruction of tree on ' + moment(record.Date, 'MM/DD/YYYY').format("dddd, MMMM Do YYYY");
+    console.log(status);
 
     // post to twitter
     var location = encodeURI(record.Address);
     // use Google Maps API to get a street view image of this location
     request.get('https://maps.googleapis.com/maps/api/streetview?size=600x400&location=' + location, function (error, response, body) {
-      if (!error && response.statusCode == 200) {
+      if (error) {
+        console.error('error getting streetview image', error);
+      } else {
         imageData = "data:" + response.headers["content-type"] + ";base64," + new Buffer(body).toString('base64');
 
         // upload street view image to Twitter so it can be used in a tweet
         Bot.post('media/upload', { media_data: new Buffer(body).toString('base64') }, function (err, data, response) {
-          console.log('upload')
-          console.log(err)
+          if (err) console.error('error uploading image to twitter', err);
           // now we can assign alt text to the media, for use by screen readers and 
           // other text-based presentations and interpreters 
           var mediaIdStr = data.media_id_string
           var meta_params = { media_id: mediaIdStr }
 
           Bot.post('media/metadata/create', meta_params, function (err, data, response) {
-            console.log(err);
-            if (!err) {
+            if (err) {
+              console.error('error creating metadata', err);
+            } else {
               // now we can reference the media and post a tweet (media will attach to the tweet) 
               var params = { status: status, media_ids: [mediaIdStr] }
          
               Bot.post('statuses/update', params, function (err, data, response) {
-                console.log('done');
-
-                // wait 2 hours before doing the next tweet
-                setTimeout(doTweet, 1000*60*120);
+                if (err) console.error('error tweeting', err);
+                else console.log('done tweeting');
               });
             }
           })
